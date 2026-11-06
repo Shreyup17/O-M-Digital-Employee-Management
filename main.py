@@ -114,7 +114,7 @@ def get_recorded_issues(db: Session = Depends(database.get_db)):
     return db.query(models.IssueRecord).order_by(models.IssueRecord.id.desc()).all()
 
 # AI ASK
-ANYTHING_LLM_API_KEY =  "HC3AW5E-6B84YVK-NNAERWR-AX8TWGY".strip().replace(" ", "") # Paste your generated key
+ANYTHING_LLM_API_KEY =  "HC3AW5E-6B84YVK-NNAERWR-AX8TWGY".strip().replace(" ", "")  # Paste API key
 ANYTHING_LLM_URL = "https://nastily-saddled-probe.ngrok-free.dev/api/generate"
 ANYTHING_LLM_BASE_URL = "http://localhost:8888/api/v1"
 WORKSPACE_SLUG = "oandm"
@@ -171,9 +171,6 @@ def ask_ai(question: str):
         return f"Error connecting to AI: {str(e)}"
 
 def sync_to_ai_knowledge_base(question, solution):
-    """
-    Automatically updates the AnythingLLM knowledge base with the human-provided solution.
-    """
     url = f"{ANYTHING_LLM_BASE_URL}/workspace/{WORKSPACE_SLUG}/update-embeddings"
     headers = {
         "Authorization": f"Bearer {ANYTHING_LLM_API_KEY}",
@@ -196,9 +193,6 @@ class PortalQuery(BaseModel):
     user_question: str = Field(..., validation_alias="user_query")
 
 def record_unanswered_issue_in_db(db: Session, user_query: str):
-    """
-    Saves the unaswered question to the local SQLite database so O&M personnel can review it during manual intervention.
-    """
     new_issue = models.IssueRecord(
         user_query=user_query,
         is_unanswered=True,
@@ -299,10 +293,6 @@ def resolve_issue(issue_id: int, human_answer: str, db: Session = Depends(get_db
         return {"status": "Partial Success", "detail": f"Database updated locally, sync connection timed out: {e}"}
 @app.post("/sync-knowledge/")
 def sync_knowledge_base_folder():
-    """
-    Scans the local trainData/ folder and programmatically uploads
-    and embeds all files into the active AnythingLLM workspace.
-    """
     folder_path = "./trainData"
 
     if not os.path.exists(folder_path):
@@ -373,11 +363,6 @@ def sync_knowledge_base_folder():
     
 @app.post("/force-deep-sync/")
 def force_deep_sync_pipeline():
-    """
-    Automated Modular Data Pipeline.
-    Cleans authorization layers, loops through local 'trainData' disk files,
-    and programmatically updates workspace vector mappings.
-    """
     current_dir = os.path.dirname(os.path.abspath(__file__))
     folder_path = os.path.join(current_dir, "trainData")
 
