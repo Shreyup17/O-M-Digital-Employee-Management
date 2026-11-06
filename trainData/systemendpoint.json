@@ -1,0 +1,16 @@
+{
+  "system_name": "O&M Account Management Portal",
+  "api_version": "v1.0.4",
+  "endpoints": [
+    {
+      "path": "/query-portal/",
+      "method": "POST",
+      "description": "Intelligent query routing pipeline with integrated regex filtering and hardware timeout guardrails."
+    },
+    {
+      "path": "/unfreeze-account/",
+      "method": "POST",
+      "description": "Executes automated database update setting is_frozen to false."
+    }
+  ]
+}

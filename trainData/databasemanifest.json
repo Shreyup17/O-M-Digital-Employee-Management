@@ -1,0 +1,50 @@
+{
+  "system_manifest": {
+    "module_name": "O&M Account Management & AI Router Portal",
+    "architecture_version": "v1.0.4",
+    "deployment_environment": "Localhost Development - Intel Accelerated Architecture",
+    "database_configurations": {
+      "engine": "SQLite 3",
+      "connection_pool_limit": 100,
+      "timeout_threshold_seconds": 15,
+      "fail_safe_behavior": "Automated local logging to IssueRecord table upon upstream connection failure"
+    },
+    "components": [
+      {
+        "component_name": "FastAPI Routing Core",
+        "endpoints": [
+          {
+            "path": "/query-portal/",
+            "method": "POST",
+            "request_payload": "user_query (string)",
+            "processing_efficiency": "Pre-filters input strings through LOCAL_EXPRESS_CACHE dictionary before triggering AnyLLM infrastructure to bypass unnecessary neural network loops.",
+            "timeout_limit": 90
+          },
+          {
+            "path": "/unfreeze-account/",
+            "method": "POST",
+            "request_payload": "user_id (int), security_token (string)",
+            "database_mutation": "Executes transaction to alter model state is_frozen from True to False",
+            "success_response_code": 200
+          }
+        ]
+      },
+      {
+        "component_name": "AnythingLLM Gateway Middleware",
+        "api_endpoint_target": "http://localhost:3001/api/v1/workspace/oandm/chat",
+        "expected_headers": {
+          "Authorization": "Bearer ANYTHING_LLM_API_KEY",
+          "Content-Type": "application/json"
+        },
+        "known_error_profiles": [
+          {
+            "status_code": 500,
+            "error_name": "Internal Server Error",
+            "root_cause": "The CPU running Ollama processing deepseek-r1:8b timed out because the math calculation exceeded the threshold before producing tokens.",
+            "remediation": "Increase python requests timeout context argument to 90 seconds or optimize vector chunk processing size to 300 words inside workspace settings panel."
+          }
+        ]
+      }
+    ]
+  }
+}

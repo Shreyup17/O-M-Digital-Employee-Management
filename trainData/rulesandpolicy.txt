@@ -1,0 +1,5 @@
+[COMPANY SECURITY O&M POLICY]
+- Accounts will automatically lock after 3 consecutive failed login attempts.
+- Password reset requirements: Minimum 8 characters, must contain at least 1 number and 1 special character.
+- Account freezing rule: If an account is suspended due to security anomalies, it must be routed to the web portal unfreeze mechanism at http://construction.om.portal/unfreeze.
+- Administrative bypass: General support agents cannot unfreeze accounts manually without a valid database issue ticket ID.

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>China Telecom O&M Command Center</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
+
+    <header class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex justify-between items-center shadow-md">
+        <div class="flex items-center space-x-3">
+            <div class="bg-blue-600 p-2 rounded-lg font-bold text-white tracking-wider text-sm">O&M</div>
+            <h1 class="text-xl font-bold tracking-tight">Digital Employee Support & Personnel Hub</h1>
+        </div>
+        <div class="text-xs text-slate-400 bg-slate-900 px-3 py-1.5 rounded-full border border-slate-700">
+            System Status: <span class="text-emerald-400 font-semibold">Operational Loop Active</span>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden p-4 space-x-4">
+        
+        <section class="w-1/4 bg-slate-800 rounded-xl border border-slate-700 flex flex-col p-4 shadow-lg">
+            <h2 class="text-md font-semibold text-blue-400 mb-3 flex items-center">
+                👤 Personnel Account Registry
+            </h2>
+            
+            <form id="accountForm" class="bg-slate-900 p-3 rounded-lg border border-slate-700 mb-4 space-y-2">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-wide">Add New Operator</div>
+                <input type="text" id="empId" placeholder="Employee ID (e.g., CT-904)" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-xs focus:outline-none focus:border-blue-500" required>
+                <input type="text" id="fullName" placeholder="Full Name" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-xs focus:outline-none focus:border-blue-500" required>
+                <input type="text" id="dept" placeholder="Department" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-xs focus:outline-none focus:border-blue-500" required>
+                <input type="password" id="pwd" placeholder="System Password" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-xs focus:outline-none focus:border-blue-500" required>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-1 rounded text-xs transition">Register Account</button>
+            </form>
+
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Active Directory</div>
+            <div id="accountsContainer" class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs">
+                <div class="text-slate-500 italic text-center py-4">Loading directory logs...</div>
+            </div>
+        </section>
+
+        <section class="w-2/4 bg-slate-800 rounded-xl border border-slate-700 flex flex-col shadow-lg overflow-hidden">
+            <div class="bg-slate-850 p-4 border-b border-slate-700 flex justify-between items-center">
+                <h2 class="text-md font-semibold text-slate-200">🤖 Automated Self-Service Portal</h2>
+                <span class="text-xs text-slate-400 bg-slate-900 px-2 py-0.5 rounded">RAG Node Engine</span>
+            </div>
+
+            <div id="chatContainer" class="flex-1 p-4 overflow-y-auto space-y-4 bg-slate-900/40">
+                <div class="bg-slate-800/60 border border-slate-700 p-3 rounded-xl max-w-[85%] text-sm">
+                    <p class="text-xs font-bold text-blue-400 uppercase tracking-wide mb-1">System Bot</p>
+                    Welcome to the China Telecom O&M Support Node. Input your operational error log code or system maintenance query below for dynamic knowledge base parsing.
+                </div>
+            </div>
+
+            <form id="chatForm" class="p-3 bg-slate-850 border-t border-slate-700 flex space-x-2">
+                <input type="text" id="userInput" placeholder="Ask a question (e.g., 'What to do if account is frozen?')" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 placeholder-slate-500">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-5 rounded-xl text-sm transition shadow-md">Dispatch</button>
+            </form>
+        </section>
+
+        <section class="w-1/4 bg-slate-800 rounded-xl border border-slate-700 flex flex-col p-4 shadow-lg">
+            <div class="mb-3">
+                <h2 class="text-md font-semibold text-amber-500 flex items-center">
+                    ⚠️ Escalation Review Queue
+                </h2>
+                <p class="text-[11px] text-slate-400 mt-0.5">Unresolved anomalies requiring manual intervention and knowledge syncing.</p>
+            </div>
+
+            <div id="issuesContainer" class="flex-1 overflow-y-auto space-y-3 pr-1 text-xs">
+                <div class="text-slate-500 italic text-center py-4">No pending escalations found.</div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        const API_BASE = "http://127.0.0.1:8000";
+
+        // ==========================================
+        // 1. PERSONNEL MANAGEMENT WORKFLOW (CRUD)
+        // ==========================================
+        async function fetchAccounts() {
+            try {
+                const res = await fetch(`${API_BASE}/accounts`);
+                if (!res.ok) throw new Error("Directory read failed");
+                const accounts = await res.ok ? await res.json() : [];
+                const container = document.getElementById("accountsContainer");
+                container.innerHTML = "";
+
+                if (accounts.length === 0) {
+                    container.innerHTML = `<div class="text-slate-500 text-center py-4 italic">No staff profiles registered.</div>`;
+                    return;
+                }
+
+                accounts.forEach(acc => {
+                    const div = document.createElement("div");
+                    div.className = `p-2.5 rounded-lg border flex justify-between items-center ${acc.is_active ? 'bg-slate-900/60 border-slate-700' : 'bg-rose-950/20 border-rose-900/50 opacity-60'}`;
+                    div.innerHTML = `
+                        <div>
+                            <div class="font-bold text-slate-200">${acc.full_name} <span class="text-[10px] text-slate-400 font-normal">(${acc.employee_id})</span></div>
+                            <div class="text-[10px] text-slate-400">${acc.department} • ${acc.is_active ? '🟢 Active' : '🔴 Frozen'}</div>
+                        </div>
+                        ${acc.is_active ? `<button onclick="freezeAccount(${acc.id})" class="text-[10px] border border-rose-500/40 text-rose-400 hover:bg-rose-500 hover:text-white px-2 py-0.5 rounded transition">Freeze</button>` : ''}
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        document.getElementById("accountForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const payload = {
+                employee_id: document.getElementById("empId").value,
+                full_name: document.getElementById("fullName").value,
+                department: document.getElementById("dept").value,
+                password: document.getElementById("pwd").value
+            };
+
+            const res = await fetch(`${API_BASE}/accounts`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                document.getElementById("accountForm").reset();
+                fetchAccounts();
+            }
+        });
+
+        async function freezeAccount(id) {
+            if (confirm("Deactivate and freeze this operational profile access parameter?")) {
+                await fetch(`${API_BASE}/accounts/${id}`, { method: "DELETE" });
+                fetchAccounts();
+            }
+        }
+
+        // ==========================================
+        // 2. CENTRAL AUTONOMOUS DISPATCH WORKFLOW (RAG AI)
+        // ==========================================
+       document.getElementById("chatForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const inputField = document.getElementById("userInput");
+    const query = inputField.value.trim();
+    if (!query) return;
+
+    // Render user query block instantly in the UI chat window
+    appendChatBubble("User Officer", query, "bg-slate-800 text-slate-100 border border-slate-700 ml-auto");
+    inputField.value = "";
+
+    // Render systemic loading indicator
+    const loadId = appendChatBubble("System Dispatcher", "Running multi-domain vector matching query operations...", "bg-slate-850 text-slate-400 italic animate-pulse");
+
+    try {
+        const res = await fetch(`${API_BASE}/query-portal/`, {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json" // Send a standard JSON object string
+            },
+            body: JSON.stringify({ user_query: query }) // Matches payload.user_query schema key exactly!
+        });
+        
+        // Remove loading state element
+        const currentLoader = document.getElementById(loadId);
+        if (currentLoader) currentLoader.remove();
+
+        if (!res.ok) {
+            const errText = await res.text();
+            console.error("FastAPI Error Traceback Details:", errText);
+            appendChatBubble("System Error Handler", `🚨 **Validation Rejection (${res.status}):** Payload schema check failed. See browser console logs.`, "bg-rose-950/40 text-rose-400 border border-rose-900");
+            return;
+        }
+
+        const data = await res.json();
+        
+        if (data.status === "Escalated to Human O&M Team") {
+            appendChatBubble("System Automation Node", `🚨 **Anomalous Query Detected — Context Deficit:** Knowledge base threshold missing. Ticket successfully routed to human escalation review queues.`, "bg-amber-950/30 text-amber-400 border border-amber-900/50");
+            if (typeof fetchIssues === "function") fetchIssues(); 
+        } else {
+            const systemAnswer = data.answer || "System cleared query with no text payload.";
+            appendChatBubble("Knowledge Base Output", systemAnswer, "bg-slate-800 text-slate-200 border border-slate-700");
+        }
+    } catch (err) {
+        console.error("Network Fetch Failure:", err);
+        const currentLoader = document.getElementById(loadId);
+        if (currentLoader) currentLoader.remove();
+        appendChatBubble("System Failure Handler", "Network connection or request parsing execution timeout.", "bg-rose-950/40 text-rose-400 border border-rose-900");
+    }
+});
+
+        function appendChatBubble(sender, text, classes) {
+            const id = "msg-" + Math.random().toString(36).substr(2, 9);
+            const container = document.getElementById("chatContainer");
+            const bubble = document.createElement("div");
+            bubble.id = id;
+            bubble.className = `p-3 rounded-xl text-sm max-w-[85%] shadow-sm ${classes}`;
+            bubble.innerHTML = `<p class="text-[10px] font-bold uppercase tracking-wide opacity-60 mb-0.5">${sender}</p><div>${text}</div>`;
+            container.appendChild(bubble);
+            container.scrollTop = container.scrollHeight;
+            return id;
+        }
+
+        // ==========================================
+        // 3. HUMAN ESCALATION & AUTO-SYNC SYNC WORKFLOW
+        // ==========================================
+        async function fetchIssues() {
+            try {
+                const res = await fetch(`${API_BASE}/issues/`);
+                const issues = await res.ok ? await res.json() : [];
+                const container = document.getElementById("issuesContainer");
+                container.innerHTML = "";
+
+                // Filter for unresolved items
+                const pending = issues.filter(i => i.is_unanswered);
+
+                if (pending.length === 0) {
+                    container.innerHTML = `<div class="text-slate-500 text-center py-4 italic">No pending escalations found.</div>`;
+                    return;
+                }
+
+                pending.forEach(issue => {
+                    const div = document.createElement("div");
+                    div.className = "bg-slate-900 p-3 rounded-lg border border-slate-700 space-y-2 flex flex-col shadow";
+                    div.innerHTML = `
+                        <div class="text-slate-300 font-medium">Q: "${issue.user_query}"</div>
+                        <textarea id="solve-${issue.id}" placeholder="Input authoritative manual intervention directive..." class="w-full bg-slate-800 border border-slate-700 rounded p-1 text-[11px] h-12 focus:outline-none focus:border-amber-500 placeholder-slate-600 text-slate-200"></textarea>
+                        <button onclick="resolveIssue(${issue.id})" class="self-end bg-amber-600 hover:bg-amber-500 text-slate-900 font-bold px-3 py-1 rounded text-[10px] transition uppercase tracking-wider">Sync to KB Loop</button>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function resolveIssue(id) {
+    const solution = document.getElementById(`solve-${id}`).value.trim();
+    if (!solution) return alert("Please specify an intervention fix directive string.");
+
+    const button = document.querySelector(`button[onclick="resolveIssue(${id})"]`);
+    const originalText = button.innerText;
+    button.innerText = "Syncing & Embedding...";
+    button.disabled = true;
+
+    try {
+        // 🟢 THE FIX: Pass the string as a URL query string argument named 'human_answer'
+        // using encodeURIComponent to protect spaces and special characters.
+        const requestUrl = `${API_BASE}/resolve-issue/${id}?human_answer=${encodeURIComponent(solution)}`;
+
+        const res = await fetch(requestUrl, {
+            method: "PUT", // Matches your @app.put route perfectly
+            headers: {
+                "Accept": "application/json"
+            }
+        });
+
+        if (res.ok) {
+            fetchIssues(); // Refresh the unresolved sidebar lists instantly
+            appendChatBubble("System Loop Sync", `✨ Knowledge base refresh cycle complete for item tracking ID #${id}. System has ingested the solution.`, "bg-emerald-950/30 text-emerald-400 border border-emerald-900/50");
+        } else {
+            const errLog = await res.text();
+            console.error("FastAPI Rejection Details:", errLog);
+            alert(`Knowledge payload insertion error (${res.status}). Check dev tools console.`);
+            button.innerText = originalText;
+            button.disabled = false;
+        }
+    } catch (err) {
+        console.error("Network Link Exception:", err);
+        alert("Network transaction failed to execute.");
+        button.innerText = originalText;
+        button.disabled = false;
+    }
+}
+
+        // Initialize lists on runtime landing load
+        fetchAccounts();
+        fetchIssues();
+	setInterval(() => {
+    		fetchIssues();
+	}, 3000); 
+
+// Optional: Automatically refresh the active employee profiles directory list every 10 seconds
+	setInterval(() => {
+   		 fetchAccounts();
+	}, 10000);
+    </script>
+</body>
+</html>
